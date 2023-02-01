@@ -76,15 +76,50 @@
         </template>
       </q-table>
     </div>
+    <!-- Dialog for adding or updating a user -->
+    <q-dialog v-model="editingEmployee" persistent>
+      <q-card>
+        <q-card-section class="row items-center">
+          <div class="text-h6">Add Employee</div>
+        </q-card-section>
+
+        <q-card-section>
+          <q-form>
+            <q-input
+              v-model="employee.name"
+              label="Full Name"
+              stack-label
+              :rules="[(val) => val.length > 0 || 'Please enter a name']"
+            />
+            <q-input
+              v-model="employee.age"
+              label="Age"
+              stack-label
+              :rules="[(val) => val.length > 0 || 'Please enter an age']"
+            />
+          </q-form>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" color="primary" v-close-popup />
+          <q-btn
+            label="Add"
+            color="primary"
+            v-close-popup
+            :loading="loading"
+            @click="addEmployee"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script>
 import { ref, onMounted, watchEffect, reactive } from "vue";
-import axios from "axios";
+import { api } from "../boot/axios";
 import { Loading, useQuasar } from "quasar";
 
-const api = "http://localhost:3000/api/employees";
 const columns = [
   {
     name: "id",

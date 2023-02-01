@@ -26,11 +26,18 @@
           </q-item-section>
           <q-item-section> Home </q-item-section>
         </q-item>
-        <q-item clickable v-ripple to="/employees">
+        <!-- <q-item clickable v-ripple to="/employees">
           <q-item-section avatar>
             <q-avatar icon="person" />
           </q-item-section>
           <q-item-section> Employee </q-item-section>
+        </q-item> -->
+
+        <q-item clickable v-ripple to="/users">
+          <q-item-section avatar>
+            <q-avatar icon="person" />
+          </q-item-section>
+          <q-item-section> Users </q-item-section>
         </q-item>
       </q-list>
     </q-drawer>
