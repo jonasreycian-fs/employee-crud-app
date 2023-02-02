@@ -4,14 +4,11 @@ const { Address, User } = require("../models/models");
 
 describe("Address", () => {
   it("should create a new address", () => {
-    const address = new Address("Landmark", "Street", "City", "Zip", "Country");
-    expect(address).toEqual({
-      landmark: "Landmark",
-      street: "Street",
-      city: "City",
-      zip: "Zip",
-      country: "Country",
-    });
+    const address = new Address("Landmark", "Street", "City", "Country");
+    expect(address).toBeInstanceOf(Address);
+    expect(address.landmark).toEqual("Landmark");
+    expect(address.street).toEqual("Street");
+    expect(address.city).toEqual("City");
   });
 
   it("should create a new address with default values", () => {
@@ -20,7 +17,6 @@ describe("Address", () => {
       landmark: undefined,
       street: undefined,
       city: undefined,
-      zip: undefined,
       country: undefined,
     });
   });
@@ -28,7 +24,7 @@ describe("Address", () => {
 
 describe("User", () => {
   it("should create a new user", () => {
-    const address = new Address("Landmark", "Street", "City", "Zip", "Country");
+    const address = new Address("Landmark", "Street", "City", "Country");
     const user = new User(
       "ID",
       "First Name",

@@ -7,7 +7,7 @@
         color="primary"
         text-color="white"
         label="Add User"
-        @click="openDialog(Dialog.CREATE)"
+        @click="openDialog(null, UserDialog.CREATE)"
       />
     </div>
     <q-separator />
@@ -16,12 +16,12 @@
       :rows="users.value"
       :columns="columns"
       row-key="name"
-      :rows-per-page-options="[10, 25, 50]"
-      :filter="filter"
+      :rows-per-page-options="[5, 10, 20]"
+      :filter="searchStr"
       style="margin-top: 30px"
     >
       <template v-slot:top-right>
-        <q-input dense debounce="300" v-model="filter" placeholder="Search">
+        <q-input dense debounce="300" v-model="searchStr" placeholder="Search">
           <template v-slot:append>
             <q-icon name="search" />
           </template>
@@ -29,128 +29,213 @@
       </template>
       <template v-slot:header="props">
         <q-tr :props="props">
-          <q-th
-            auto-width
-            v-for="col in props.cols"
-            :key="col.name"
-            :props="props"
-          >
-            {{ col.label }}
+          <q-th v-for="col in props.cols" :key="col.name" :props="props">
+            <span style="float: left">
+              {{ col.label }}
+            </span>
           </q-th>
         </q-tr>
       </template>
       <template v-slot:body="props">
         <q-tr :props="props">
-          <q-td v-for="col in props.cols" :key="col.name" :props="props">
-            {{ col.value }}
+          <q-td> {{ props.row.id }} </q-td>
+          <q-td>
+            {{ `${props.row.last_name}, ${props.row.first_name}` }}
           </q-td>
-          <q-td auto-width>
-            <q-btn
-              color="primary"
-              text-color="white"
-              label="Edit"
-              @click="editUser(props.row.id)"
-            />
-            <q-btn
-              color="secondary"
-              text-color="white"
-              label="Delete"
-              @click="deleteUser(props.row.id)"
-            />
+          <q-td> {{ props.row.email }} </q-td>
+          <q-td> {{ getPhysicalAddress(props.row.physical_address) }} </q-td>
+          <q-td>
+            <div class="q-pa-md q-gutter-sm">
+              <q-btn
+                outline
+                color="secondary"
+                label="Details"
+                size="sm"
+                @click="openDialog(props.row, UserDialog.VIEW)"
+              />
+              <q-btn
+                outline
+                color="primary"
+                label="Edit"
+                size="sm"
+                @click="openDialog(props.row, UserDialog.UPDATE)"
+              />
+              <q-btn
+                outline
+                color="negative"
+                label="Delete"
+                size="sm"
+                @click="deleteUser(props.row.id)"
+              />
+            </div>
           </q-td>
         </q-tr>
       </template>
     </q-table>
 
     <!-- Open this dialog when creating a user -->
-    <q-dialog v-model="showDialog" persistent>
-      <q-card class="width: 80vw">
+    <q-dialog v-model="showDialog" persistent full-width>
+      <q-card>
         <q-card-section class="row items-center">
           <div class="text-h6">
-            {{ Dialog === Dialog.CREATE ? "Add User" : "Update User" }}
+            {{ dialog }}
           </div>
         </q-card-section>
+        <q-separator />
         <q-card-section>
-          <q-form @submit="submitForm" class="q-gutter-md">
-            <q-input
-              v-model="user.first_name"
-              label="First Name"
-              filled
-              lazy-rules
-              :rules="[(val) => val.length > 0 || 'Please enter a first name']"
-            />
-            <q-input
-              v-model="user.last_name"
-              label="Last Name"
-              filled
-              lazy-rules
-              :rules="[(val) => val.length > 0 || 'Please enter a last name']"
-            />
-            <q-input
-              v-model="user.email"
-              label="Email"
-              filled
-              lazy-rules
-              :rules="[(val) => val.length > 0 || 'Please enter an email']"
-            />
-            <q-input
-              v-model="user.physical_address.landmark"
-              label="Landmark"
-              filled
-              lazy-rules
-              :rules="[(val) => val.length > 0 || 'Please enter a landmark']"
-            />
-            <q-input
-              v-model="user.physical_address.street"
-              label="Street"
-              filled
-              lazy-rules
-              :rules="[(val) => val.length > 0 || 'Please enter a street']"
-            />
-            <q-input
-              v-model="user.physical_address.city"
-              label="City"
-              filled
-              lazy-rules
-              :rules="[(val) => val.length > 0 || 'Please enter a city']"
-            />
-            <q-input
-              v-model="user.physical_address.zip"
-              label="Zip"
-              filled
-              lazy-rules
-              :rules="[(val) => val.length > 0 || 'Please enter a zip']"
-            />
-            <q-input
-              v-model="user.billing_address.landmark"
-              label="Landmark"
-              filled
-              lazy-rules
-              :rules="[(val) => val.length > 0 || 'Please enter a landmark']"
-            />
-            <q-input
-              v-model="user.billing_address.street"
-              label="Street"
-              filled
-              lazy
-              :rules="[(val) => val.length > 0 || 'Please enter a street']"
-            />
+          <q-form @submit="submitForm">
+            <div class="fit row justify-evenly q-gutter-md">
+              <q-card flat bordered class="col-md-3">
+                <q-card-section>
+                  <div class="text-h6">Personal Information</div>
+                </q-card-section>
+                <q-separator inset />
+                <q-card-section>
+                  <q-input
+                    v-model="user.first_name"
+                    label="First Name"
+                    filled
+                    lazy-rules
+                    :disable="dialog === UserDialog.VIEW"
+                    :rules="[
+                      (val) => val.length > 0 || 'Please enter a first name',
+                    ]"
+                  />
+                  <q-input
+                    v-model="user.last_name"
+                    label="Last Name"
+                    filled
+                    lazy-rules
+                    :disable="dialog === UserDialog.VIEW"
+                    :rules="[
+                      (val) => val.length > 0 || 'Please enter a last name',
+                    ]"
+                  />
+                  <q-input
+                    v-model="user.email"
+                    label="Email"
+                    filled
+                    lazy-rules
+                    :disable="dialog === UserDialog.VIEW"
+                    :rules="[
+                      (val) => val.length > 0 || 'Please enter an email',
+                    ]"
+                  />
+                </q-card-section>
+              </q-card>
+              <q-card flat bordered class="col-md-3">
+                <q-card-section>
+                  <div class="text-h6">Physical Address</div>
+                </q-card-section>
+                <q-separator inset />
+                <q-card-section>
+                  <q-input
+                    v-model="user.physical_address.landmark"
+                    label="Landmark"
+                    filled
+                    lazy-rules
+                    :disable="dialog === UserDialog.VIEW"
+                    :rules="[
+                      (val) => val.length > 0 || 'Please enter a landmark',
+                    ]"
+                  />
+                  <q-input
+                    v-model="user.physical_address.street"
+                    label="Street"
+                    filled
+                    lazy-rules
+                    :disable="dialog === UserDialog.VIEW"
+                    :rules="[
+                      (val) => val.length > 0 || 'Please enter a street',
+                    ]"
+                  />
+                  <q-input
+                    v-model="user.physical_address.city"
+                    label="City"
+                    filled
+                    lazy-rules
+                    :disable="dialog === UserDialog.VIEW"
+                    :rules="[(val) => val.length > 0 || 'Please enter a city']"
+                  />
+                  <q-input
+                    v-model="user.physical_address.country"
+                    label="Country"
+                    filled
+                    lazy-rules
+                    :disable="dialog === UserDialog.VIEW"
+                    :rules="[
+                      (val) => val.length > 0 || 'Please enter a country',
+                    ]"
+                  />
+                </q-card-section>
+              </q-card>
+              <q-card flat bordered class="col-md-3">
+                <q-card-section>
+                  <div class="text-h6">Billing Address</div>
+                </q-card-section>
+                <q-separator inset />
+                <q-card-section>
+                  <q-input
+                    v-model="user.billing_address.landmark"
+                    label="Landmark"
+                    filled
+                    lazy-rules
+                    :disable="dialog === UserDialog.VIEW"
+                    :rules="[
+                      (val) => val.length > 0 || 'Please enter a landmark',
+                    ]"
+                  />
+                  <q-input
+                    v-model="user.billing_address.street"
+                    label="Street"
+                    filled
+                    lazy-rules
+                    :disable="dialog === UserDialog.VIEW"
+                    :rules="[
+                      (val) => val.length > 0 || 'Please enter a street',
+                    ]"
+                  />
+                  <q-input
+                    v-model="user.billing_address.city"
+                    label="City"
+                    filled
+                    lazy-rules
+                    :disable="dialog === UserDialog.VIEW"
+                    :rules="[(val) => val.length > 0 || 'Please enter a city']"
+                  />
+                  <q-input
+                    v-model="user.billing_address.country"
+                    label="Country"
+                    filled
+                    lazy-rules
+                    :disable="dialog === UserDialog.VIEW"
+                    :rules="[(val) => val.length > 0 || 'Please enter a city']"
+                  />
+                </q-card-section>
+              </q-card>
+            </div>
           </q-form>
         </q-card-section>
+        <q-separator />
         <q-card-actions align="right">
-          <q-btn
-            color="primary"
-            text-color="white"
-            label="Submit"
-            type="submit"
-            @click="submitForm"
-          />
-          <q-btn
-            color="secondary"
-            text-color="white"
-            label="Cancel"
-            @click="closeDialog"
-          />
+          <div class="q-pa-md q-gutter-md">
+            <q-btn
+              v-if="
+                dialog === UserDialog.CREATE || dialog === UserDialog.UPDATE
+              "
+              color="primary"
+              text-color="white"
+              label="Submit"
+              type="submit"
+              @click="submitForm"
+            />
+            <q-btn
+              color="secondary"
+              text-color="white"
+              label="Cancel"
+              @click="closeDialog"
+            />
+          </div>
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -159,12 +244,13 @@
 
 <script>
 import { api } from "../boot/axios";
-import { Notify, Loading } from "quasar";
-import { ref, reactive, onMounted, watchEffect } from "vue";
+import { Notify, Loading, Dialog } from "quasar";
+import { ref, onMounted, watchEffect, reactive } from "vue";
 
-const Dialog = Object.freeze({
-  CREATE: "createUser",
-  UPDATE: "updateUser",
+const UserDialog = Object.freeze({
+  CREATE: "Create User",
+  UPDATE: "Update User",
+  VIEW: "View User",
 });
 
 let address = {
@@ -174,7 +260,7 @@ let address = {
   zip: "",
 };
 
-let userTemplate = {
+const userTemplate = {
   id: "",
   first_name: "",
   last_name: "",
@@ -191,21 +277,21 @@ const columns = [
     sortable: true,
   },
   {
-    name: "first_name",
-    label: "First Name",
-    field: "first_name",
-    sortable: true,
-  },
-  {
-    name: "last_name",
-    label: "Last Name",
-    field: "last_name",
+    name: "full_name",
+    label: "Full Name",
+    field: "full_name",
     sortable: true,
   },
   {
     name: "email",
     label: "Email",
     field: "email",
+    sortable: true,
+  },
+  {
+    name: "p_address",
+    label: "Physical Address",
+    field: "p_address",
     sortable: true,
   },
   {
@@ -219,19 +305,24 @@ const columns = [
 export default {
   name: "UserPage",
   setup() {
-    const users = ref([]);
+    const users = reactive([]);
     const user = ref(userTemplate);
-    const isLoading = ref(false);
     const isEditing = ref(false);
-    const filter = ref("");
+    const searchStr = ref("");
     const showDialog = ref(false);
+    const dialog = ref(UserDialog.CREATE);
 
     const createUser = async () => {
+      Loading.show();
       api
         .post("/api/users", user.value)
         .then(() => {
-          readUsers(filter.value);
+          readUsers(searchStr.value);
           user.value = userTemplate;
+          Notify.create({
+            message: "User created successfully",
+            color: "positive",
+          });
         })
         .catch((err) => {
           Notify.create({
@@ -247,14 +338,14 @@ export default {
     const readUsers = async (str) => {
       Loading.show();
       await api
-        .get(`/api/users?filter=${str}`)
+        .get(`/api/users?name=${str}`)
         .then((res) => {
           users.value = res.data;
-          console.log(users.value);
+          console.log(JSON.stringify(res.data));
         })
-        .catch((err) => {
+        .catch(({ response }) => {
           Notify.create({
-            message: err.response.data.message,
+            message: response.message,
             color: "negative",
           });
         })
@@ -267,12 +358,16 @@ export default {
       api
         .put(`/api/users/${user.value.id}`, user.value)
         .then(() => {
-          readUsers(filter.value);
+          readUsers(searchStr.value);
           user.value = userTemplate;
-        })
-        .catch((err) => {
           Notify.create({
-            message: err.response.data.message,
+            message: "User updated successfully",
+            color: "positive",
+          });
+        })
+        .catch(({ response }) => {
+          Notify.create({
+            message: response.data.message,
             color: "negative",
           });
         })
@@ -282,58 +377,80 @@ export default {
     };
 
     const deleteUser = (id) => {
-      isLoading.value = true;
-      Loading.show();
-      api
-        .delete(`/api/users/${id}`)
-        .then(() => {
-          readUsers(filter.value);
-        })
-        .catch((err) => {
-          Notify.create({
-            message: err.response.data.message,
-            color: "negative",
-          });
-        })
-        .finally(() => {
-          Loading.hide();
-        });
+      Dialog.create({
+        title: "Delete User",
+        message: "Are you sure you want to delete this user?",
+        cancel: true,
+        persistent: true,
+      }).onOk(() => {
+        Loading.show();
+
+        setTimeout(() => {
+          api
+            .delete(`/api/users/${id}`)
+            .then(() => {
+              readUsers(searchStr.value);
+              Notify.create({
+                message: "User deleted successfully",
+                color: "positive",
+              });
+            })
+            .catch((err) => {
+              Notify.create({
+                message: err.response.data.message,
+                color: "negative",
+              });
+            })
+            .finally(() => {
+              Loading.hide();
+            });
+        }, 3000);
+      });
     };
 
-    const openDialog = (dialog) => {
-      isEditing.value = dialog === Dialog.UPDATE;
+    const openDialog = (data, type) => {
+      dialog.value = type;
+      console.log(type);
+      if (type === UserDialog.CREATE) {
+        user.value = userTemplate;
+      } else if (type === UserDialog.UPDATE || type === UserDialog.VIEW) {
+        user.value = data;
+      }
       showDialog.value = true;
     };
 
     const closeDialog = () => {
       showDialog.value = false;
       user.value = userTemplate;
+      readUsers(searchStr.value);
     };
 
     const submitForm = () => {
-      if (isEditing.value) {
+      if (dialog.value == UserDialog.UPDATE) {
         updateUser();
       } else {
         createUser();
       }
+      closeDialog();
     };
 
     watchEffect(() => {
-      readUsers(filter.value);
+      console.log("searchStr", searchStr.value);
+      readUsers(searchStr.value);
     });
 
     onMounted(() => {
-      readUsers(filter.value);
+      readUsers(searchStr.value);
     });
 
     return {
       users,
       user,
-      isLoading,
       isEditing,
-      filter,
+      searchStr,
       columns,
-      Dialog,
+      dialog,
+      UserDialog,
       showDialog,
       submitForm,
       openDialog,
@@ -342,6 +459,17 @@ export default {
       createUser,
       updateUser,
       deleteUser,
+      getPhysicalAddress: (data) => {
+        let address = [];
+
+        if (!data) return "No physical address is set!";
+        if (data.landmark) address.push(data.landmark);
+        if (data.street) address.push(data.street);
+        if (data.city) address.push(data.city);
+        if (data.country) address.push(data.country);
+
+        return address.join(", ");
+      },
     };
   },
 };

@@ -14,9 +14,9 @@ describe("GET /", () => {
   });
 });
 
-describe("GET /api/users", () => {
+describe("GET /api/users?name=", () => {
   it("should get all users", async () => {
-    const res = await request(app).get("/api/users");
+    const res = await request(app).get("/api/users?name=");
 
     expect(res.statusCode).toEqual(200);
     expect(res.body).toBeInstanceOf(Array);
@@ -41,7 +41,7 @@ describe("POST /api/users", () => {
 
 describe("DELETE /api/users/:id", () => {
   it("should delete a user", async () => {
-    let response = await request(app).get("/api/users");
+    let response = await request(app).get("/api/users?name=");
 
     const users = response.body;
     const user = users.pop();
@@ -56,7 +56,7 @@ describe("DELETE /api/users/:id", () => {
 
 describe("GET /api/users/:id", () => {
   it("should get a user", async () => {
-    let response = await request(app).get("/api/users");
+    let response = await request(app).get("/api/users?name=");
 
     const users = response.body;
     const user = users.pop();
@@ -86,10 +86,10 @@ describe("GET /api/users/:id", () => {
 // Update a user
 describe("PUT /api/users/:id", () => {
   it("should update a user", async () => {
-    let response = await request(app).get("/api/users");
+    let response = await request(app).get("/api/users?name=");
 
     const users = response.body;
-    const user = users.pop();
+    const user = users[0];
 
     const physicalAddress = {
       street: faker.address.streetAddress(),

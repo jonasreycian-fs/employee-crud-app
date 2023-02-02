@@ -18,7 +18,7 @@ app.use(express.json());
 
 // Get all users from data.json
 app.get("/api/users", (req, res) => {
-  const name = req.query.name;
+  const name = req.query.name.toLowerCase();
   console.log(`Getting all users or a specific ${name}...`);
 
   fs.readFile(filePath, (err, data) => {
@@ -28,12 +28,16 @@ app.get("/api/users", (req, res) => {
 
     const users = JSON.parse(data);
     const user = users.find(
-      (user) => user.first_name.includes(name) || user.last_name.includes(name)
+      (user) =>
+        user.first_name.toLowerCase().includes(name) ||
+        user.last_name.toLowerCase().includes(name) ||
+        user.email.toLowerCase().includes(name)
     );
 
-    if (!user) return res.status(404).send({ message: "User not found" });
+    // If user is not found, return empty array
+    if (!user) return res.send(users);
 
-    res.send(user);
+    res.send(typeof user === "object" ? [user] : user);
   });
 });
 
@@ -64,7 +68,6 @@ app.post("/api/users", (req, res) => {
         req.body.physical_address.landmark,
         req.body.physical_address.street,
         req.body.physical_address.city,
-        req.body.physical_address.zip,
         req.body.physical_address.country
       );
 
@@ -72,7 +75,6 @@ app.post("/api/users", (req, res) => {
         req.body.billing_address.landmark,
         req.body.billing_address.street,
         req.body.billing_address.city,
-        req.body.billing_address.zip,
         req.body.billing_address.country
       );
 
@@ -131,37 +133,32 @@ app.put("/api/users/:id", (req, res) => {
 
     if (!user) return res.status(404).send({ message: "User not found" });
 
+    const physicalAddress = { ...req.body.physical_address };
+    const billingAddress = { ...req.body.billing_address };
+
     try {
-      const physicalAddress = new Address(
-        req.body.physical_address.landmark,
-        req.body.physical_address.street,
-        req.body.physical_address.city,
-        req.body.physical_address.zip,
-        req.body.physical_address.country
-      );
+      const pAddress = {
+        ...user.physical_address,
+        ...physicalAddress,
+      };
 
-      const billingAddress = new Address(
-        req.body.billing_address.landmark,
-        req.body.billing_address.street,
-        req.body.billing_address.city,
-        req.body.billing_address.zip,
+      const bAddress = {
+        ...user.billing_address,
+        ...billingAddress,
+      };
 
-        req.body.billing_address.country
-      );
-
-      const updatedUser = new User(
-        user.id,
-        req.body.first_name,
-        req.body.last_name,
-        req.body.email,
-        physicalAddress,
-        billingAddress
-      );
+      const updatedUser = {
+        ...user,
+        ...req.body,
+        updated_at: +new Date(),
+        physical_address: pAddress,
+        billing_address: bAddress,
+      };
 
       const index = users.indexOf(user);
       users[index] = updatedUser;
 
-      // Write users to data.json
+      // Write users to data.json 1675259603072
       fs.writeFile(filePath, JSON.stringify(users), (err) => {
         if (err) return res.status(500).send({ message: err.message });
         res.send({ message: "User updated successfully", data: updatedUser });

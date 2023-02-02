@@ -5,7 +5,6 @@ class Address {
     this.landmark = landmark;
     this.street = street;
     this.city = city;
-    this.zip = zip;
     this.country = country;
   }
 }
@@ -27,8 +26,8 @@ class User {
     this.email = email;
     this.physical_address = physical_address;
     this.billing_address = billing_address;
-    this.updated_at = Date.now();
-    this.created_at = Date.now();
+    this.updated_at = +new Date();
+    this.created_at = +new Date();
   }
 }
 
