@@ -1,0 +1,22 @@
+# latest verions
+version: '3.7'
+services:
+  # api service
+  api_server:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: eca-api
+    ports:
+      - 3000:3000
+  
+  # frontend service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: DockerfileMini
+    container_name: eca-frontend
+    ports:
+      - 8000:80
+    depends_on:
+      - api_server

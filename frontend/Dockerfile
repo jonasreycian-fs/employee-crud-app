@@ -1,21 +1,13 @@
-# Description: Dockerfile for the frontend using multi-stage builds
-
-# Development stage
-FROM node:16-alpine as develop-stage
+FROM node:16-alpine
 
 WORKDIR /app
+
 COPY package*.json ./
-RUN npm install --global @quasar/cli
+
+RUN npm install
+
 COPY . .
 
-# Build stage
-FROM develop-stage as build-stage
-RUN npm install
-RUN quasar build
+EXPOSE 3000
 
-# Production stage
-FROM nginx:alpine-slim as production-stage
-COPY --from=build-stage /app/dist/spa /usr/share/nginx/html
-
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["npm", "start"]
